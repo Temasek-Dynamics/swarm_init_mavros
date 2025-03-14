@@ -97,10 +97,10 @@ void PubSwarmPosetoMavros()
     swarm_pos_pub.publish(pose);
 
     // set the init_offset to false after the first publish
-    if (swarm_init_offset_received)
-    {
-        swarm_init_offset_received = false;
-    }
+    // if (swarm_init_offset_received)
+    // {
+    //     swarm_init_offset_received = false;
+    // }
 }
 
 int main(int argc, char** argv)
