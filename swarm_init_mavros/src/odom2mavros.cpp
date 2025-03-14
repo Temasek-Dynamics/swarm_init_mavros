@@ -74,7 +74,15 @@ void SwarmInitOffset_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
 
 void PubSwarmPosetoMavros()
 {
-    if (!odom_received || !swarm_init_offset_received) return;
+    // if (!odom_received || !swarm_init_offset_received) return;
+    if (!odom_received) return;
+    else if (odom_received && !swarm_init_offset_received)
+    {
+        /* pub with no offset */
+        x_init_offset = 0;
+        y_init_offset = 0;
+        z_init_offset = 0;
+    }
     
     geometry_msgs::PoseStamped pose;
     pose.header.stamp = Odom.header.stamp;
@@ -87,6 +95,12 @@ void PubSwarmPosetoMavros()
     pose.pose.orientation.z = Odom.pose.pose.orientation.z;
     pose.pose.orientation.w = Odom.pose.pose.orientation.w;
     swarm_pos_pub.publish(pose);
+
+    // set the init_offset to false after the first publish
+    if (swarm_init_offset_received)
+    {
+        swarm_init_offset_received = false;
+    }
 }
 
 int main(int argc, char** argv)
