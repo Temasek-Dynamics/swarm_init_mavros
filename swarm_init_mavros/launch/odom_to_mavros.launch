@@ -2,7 +2,7 @@
     <node pkg="swarm_init_mavros" type="swarm_init_mavros" name="swarm_init_mavros" output="screen">
         <remap from="/Odometry" to="/Odometry"/>
         <remap from="/mavros/vision_pose/pose" to="/mavros/vision_pose/pose"/>
-        <remap from="/initpose" to="/initpose"/>
+        <remap from="/initpose" to="/vins_estimator/vins_restart"/>
         <param name="is_swarm" value="false"/> <!-- Set to true if you are using the swarm version of the package -->
     </node>
 </launch>
