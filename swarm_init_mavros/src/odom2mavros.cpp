@@ -1,6 +1,23 @@
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
+struct Quaternion {
+    double w, x, y, z;
+
+    // 计算四元数叉乘 (Hamilton 乘法)
+    Quaternion operator*(const Quaternion& q) const {
+        return {
+            w * q.w - x * q.x - y * q.y - z * q.z,  // w'
+            w * q.x + x * q.w + y * q.z - z * q.y,  // x'
+            w * q.y - x * q.z + y * q.w + z * q.x,  // y'
+            w * q.z + x * q.y - y * q.x + z * q.w   // z'
+        };
+    }
+
+    void print() const {
+        std::cout << "(" << w << ", " << x << ", " << y << ", " << z << ")\n";
+    }
+};
 
 nav_msgs::Odometry Odom;
 ros::Publisher swarm_pos_pub;
@@ -20,6 +37,14 @@ geometry_msgs::PoseStamped swarm_init_offset;
 double x_init_offset = 0;
 double y_init_offset = 0;
 double z_init_offset = 0;
+
+double qx_init_offset = 0;
+double qy_init_offset = 0;
+double qz_init_offset = 0;
+double qw_init_offset = 0;
+Quaternion q_offset = {1, 0, 0, 0};
+Quaternion q_odom = {1, 0, 0, 0};
+Quaternion q_mavros = {1, 0, 0, 0};
 
 void Odom_cb(const nav_msgs::Odometry::ConstPtr &msg)
 {
@@ -41,6 +66,9 @@ void Odom_cb(const nav_msgs::Odometry::ConstPtr &msg)
             x_odom_init_sum += Odom.pose.pose.position.x;
             y_odom_init_sum += Odom.pose.pose.position.y;
             z_odom_init_sum += Odom.pose.pose.position.z;
+            // y_odom_init_sum += Odom.pose.pose.position.x;
+            // x_odom_init_sum += (-Odom.pose.pose.position.y);
+            // z_odom_init_sum += Odom.pose.pose.position.z;
             odom_count++;
         }
 
@@ -67,10 +95,23 @@ void SwarmInitOffset_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
     x_init_offset = swarm_init_offset.pose.position.x;
     y_init_offset = swarm_init_offset.pose.position.y;
     z_init_offset = swarm_init_offset.pose.position.z;
+
+    // quaternion offset is the opposite of the current quaternion
+    // the quaternion inverse
+    qx_init_offset = -Odom.pose.pose.orientation.x;
+    qy_init_offset = -Odom.pose.pose.orientation.y;
+    qz_init_offset = -Odom.pose.pose.orientation.z;
+    qw_init_offset =  Odom.pose.pose.orientation.w;
+    
+    q_offset = {qw_init_offset, qx_init_offset, qy_init_offset, qz_init_offset};
+
     ROS_INFO("x_init_offset: %f", x_init_offset);
     ROS_INFO("y_init_offset: %f", y_init_offset);
     ROS_INFO("z_init_offset: %f", z_init_offset);
+    
 }
+
+
 
 void PubSwarmPosetoMavros()
 {
@@ -82,18 +123,24 @@ void PubSwarmPosetoMavros()
         x_init_offset = 0;
         y_init_offset = 0;
         z_init_offset = 0;
+        
+        q_offset = {1, 0, 0, 0};
     }
     
     geometry_msgs::PoseStamped pose;
     pose.header.stamp = Odom.header.stamp;
-    pose.header.frame_id = "base_link";
+    pose.header.frame_id = "world";
     pose.pose.position.x = Odom.pose.pose.position.x + x_init_offset - x_odom_init;
     pose.pose.position.y = Odom.pose.pose.position.y + y_init_offset - y_odom_init;
     pose.pose.position.z = Odom.pose.pose.position.z + z_init_offset - z_odom_init;
-    pose.pose.orientation.x = Odom.pose.pose.orientation.x;
-    pose.pose.orientation.y = Odom.pose.pose.orientation.y;
-    pose.pose.orientation.z = Odom.pose.pose.orientation.z;
-    pose.pose.orientation.w = Odom.pose.pose.orientation.w;
+
+    q_odom = {Odom.pose.pose.orientation.w, Odom.pose.pose.orientation.x, Odom.pose.pose.orientation.y, Odom.pose.pose.orientation.z};
+
+    q_mavros = q_offset * q_odom;//w,x,y,z
+    pose.pose.orientation.x = q_mavros.x;
+    pose.pose.orientation.y = q_mavros.y;
+    pose.pose.orientation.z = q_mavros.z;
+    pose.pose.orientation.w = q_mavros.w;
     swarm_pos_pub.publish(pose);
 
     // set the init_offset to false after the first publish
