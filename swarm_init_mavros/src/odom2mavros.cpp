@@ -32,6 +32,9 @@ double z_odom_init_sum = 0;
 double x_odom_init = 0;
 double y_odom_init = 0;
 double z_odom_init = 0;
+double x_odom_restart = 0;
+double y_odom_restart = 0;
+double z_odom_restart = 0;
 
 geometry_msgs::PoseStamped swarm_init_offset;
 double x_init_offset = 0;
@@ -96,6 +99,11 @@ void SwarmInitOffset_cb(const geometry_msgs::PoseStamped::ConstPtr &msg)
     y_init_offset = swarm_init_offset.pose.position.y;
     z_init_offset = swarm_init_offset.pose.position.z;
 
+
+    x_odom_restart = Odom.pose.pose.position.x;
+    y_odom_restart = Odom.pose.pose.position.y;
+    z_odom_restart = Odom.pose.pose.position.z;
+
     // quaternion offset is the opposite of the current quaternion
     // the quaternion inverse
     qx_init_offset = -Odom.pose.pose.orientation.x;
@@ -129,10 +137,10 @@ void PubSwarmPosetoMavros()
     
     geometry_msgs::PoseStamped pose;
     pose.header.stamp = Odom.header.stamp;
-    pose.header.frame_id = "world";
-    pose.pose.position.x = Odom.pose.pose.position.x + x_init_offset - x_odom_init;
-    pose.pose.position.y = Odom.pose.pose.position.y + y_init_offset - y_odom_init;
-    pose.pose.position.z = Odom.pose.pose.position.z + z_init_offset - z_odom_init;
+    pose.header.frame_id = "world"; // this is the frame_id of the world frame
+    pose.pose.position.x = Odom.pose.pose.position.x + x_init_offset - x_odom_init - x_odom_restart;
+    pose.pose.position.y = Odom.pose.pose.position.y + y_init_offset - y_odom_init - y_odom_restart;
+    pose.pose.position.z = Odom.pose.pose.position.z + z_init_offset - z_odom_init - z_odom_restart;
 
     q_odom = {Odom.pose.pose.orientation.w, Odom.pose.pose.orientation.x, Odom.pose.pose.orientation.y, Odom.pose.pose.orientation.z};
 
@@ -142,12 +150,6 @@ void PubSwarmPosetoMavros()
     pose.pose.orientation.z = q_mavros.z;
     pose.pose.orientation.w = q_mavros.w;
     swarm_pos_pub.publish(pose);
-
-    // set the init_offset to false after the first publish
-    // if (swarm_init_offset_received)
-    // {
-    //     swarm_init_offset_received = false;
-    // }
 }
 
 int main(int argc, char** argv)
