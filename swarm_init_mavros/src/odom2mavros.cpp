@@ -138,9 +138,12 @@ void PubSwarmPosetoMavros()
     geometry_msgs::PoseStamped pose;
     pose.header.stamp = Odom.header.stamp;
     pose.header.frame_id = "world"; // this is the frame_id of the world frame
-    pose.pose.position.x = Odom.pose.pose.position.x + x_init_offset - x_odom_init - x_odom_restart;
-    pose.pose.position.y = Odom.pose.pose.position.y + y_init_offset - y_odom_init - y_odom_restart;
-    pose.pose.position.z = Odom.pose.pose.position.z + z_init_offset - z_odom_init - z_odom_restart;
+    // pose.pose.position.x = Odom.pose.pose.position.x + x_init_offset - x_odom_init - x_odom_restart;
+    // pose.pose.position.y = Odom.pose.pose.position.y + y_init_offset - y_odom_init - y_odom_restart;
+    // pose.pose.position.z = Odom.pose.pose.position.z + z_init_offset - z_odom_init - z_odom_restart;
+    pose.pose.position.x = Odom.pose.pose.position.x + x_init_offset  - x_odom_restart;
+    pose.pose.position.y = Odom.pose.pose.position.y + y_init_offset  - y_odom_restart;
+    pose.pose.position.z = Odom.pose.pose.position.z + z_init_offset  - z_odom_restart;
 
     q_odom = {Odom.pose.pose.orientation.w, Odom.pose.pose.orientation.x, Odom.pose.pose.orientation.y, Odom.pose.pose.orientation.z};
 
